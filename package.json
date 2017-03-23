@@ -1,0 +1,27 @@
+{
+  "name": "yxgames-h5-resource-manager",
+  "version": "1.0.38",
+  "bin": {
+    "res": "script/out/cli.js"
+  },
+  "main": "script/out/index.js",
+  "typings": "script/out/index.d.ts",
+  "description": "yxgames-util",
+  "scripts": {
+    "install": "tsc -p script",
+    "res": "node script/out/cli.js",
+    "tsc": "tsc && uglifyjs bin/resourcemanager/resourcemanager.js > bin/resourcemanager/resourcemanager.min.js",
+    "debug": "tsc -p script && tsc && egret build test/es6-api -e && npm run res test/es6-api",
+    "test": "egret build test/es6-api -e && res test/es6-api && egret run test/es6-api",
+    "test-classic": "egret build test/classic-api -e && egret-cli res test/es6-api && egret run test/classic-api"
+  },
+  "author": "wangpengfei",
+  "license": "ISC",
+  "dependencies": {
+    "egret-node-utils": "0.0.7",
+    "egret-typescript-ast": "0.0.11",
+    "mysql": "^2.13.0",
+    "res": "^0.4.0",
+    "typescript": "^2.2.0-dev.20161115"
+  }
+}

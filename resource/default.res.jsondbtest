@@ -1,0 +1,10 @@
+{
+	"npc": {
+		"name": "npc",
+		"keys": "aaa_ts"
+	},
+	"ggg": {
+		"name": "ggg",
+		"keys": "cccc_ts"
+	}
+}
