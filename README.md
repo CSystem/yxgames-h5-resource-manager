@@ -44,3 +44,6 @@ await RES.getResAsync("assets/icon.jpg");
 * 执行 ``` res publish . bin-release/web/version1 ``` 完成资源发布和 js 文件发布
 * 将游戏资源上传至游戏远程服务器 / CDN 中，不要发布到另一个文件夹，
 * 增加将游戏配置文件打包zip,并添加crc32
+## Build
+#安装依赖
+$ npm install
