@@ -28,33 +28,63 @@
 //////////////////////////////////////////////////////////////////////////////////////
 type ResourceRootSelector<T extends string> = () => T;
 
+
 type ResourceTypeSelector = (file: string) => string;
+
+type ResourceNameSelector = (file: string) => string;
+
+type ResourceMergerSelector = (file: string) => { path: string, alias: string };
+
 
 module RES {
 
 
-    var resourceTypeSelector: ResourceTypeSelector;
+    export var resourceTypeSelector: ResourceTypeSelector;
+
+    export var resourceNameSelector: ResourceNameSelector = (p) => p;
+
+    export function mapResourceName(nameSelector: ResourceNameSelector) {
+        return function (target) {
+            resourceNameSelector = nameSelector;
+        }
+    }
+
+    export function mapResourceType(typeSelector: ResourceTypeSelector) {
+        return function (target) {
+            resourceTypeSelector = typeSelector;
+        }
+    }
+
+    export function mapResourceMerger(mergerSelector: ResourceMergerSelector) {
+        return function (target) {
+        }
+    }
+
     /**
-   * @language en_US
    * Definition profile.
    * @param url Configuration file path (path resource.json).
    * @param resourceRoot Resource path. All URL in the configuration is the relative value of the path. The ultimate URL is the value of the sum of the URL of the string and the resource in the configuration.
    * @param type Configuration file format. Determine what parser to parse the configuration file. Default "json".
    * @version Egret 3.1.5
    * @platform Web,Native
+   * @language en_US
    */
     /**
-     * @language zh_CN
      * 定义配置文件。
      * @param url 配置文件路径(resource.json的路径)。
      * @param resourceRoot 资源根路径。配置中的所有url都是这个路径的相对值。最终url是这个字符串与配置里资源项的url相加的值。
      * @param type 配置文件的格式。确定要用什么解析器来解析配置文件。默认"json"
      * @version Egret 3.1.5
      * @platform Web,Native
+     * @language zh_CN
      */
-    export function mapConfig<T extends string>(url: string, rootSelector: ResourceRootSelector<T>, typeSelector: ResourceTypeSelector) {
-        return function(target) {
-            let type: string = typeSelector(url);
+    export function mapConfig<T extends string>(url: string, rootSelector: ResourceRootSelector<T>, typeSelector?: ResourceTypeSelector) {
+        return function (target) {
+            if (typeSelector) {
+                mapResourceType(typeSelector)(target);
+            }
+
+            let type = 'resourceConfig';
             if (typeof rootSelector == "string") {
                 resourceRoot = rootSelector as any as string;
             }
@@ -64,10 +94,13 @@ module RES {
             if (resourceRoot.lastIndexOf("/") != 0) {
                 resourceRoot = resourceRoot + "/";
             }
-            configItem = { url, resourceRoot, type, name: url };
-            resourceTypeSelector = typeSelector;
+            configItem = { type, resourceRoot, url, name: url };
         }
     };
+
+    export function setConfigURL(url: string) {
+        configItem.url = url;
+    }
 
     export var resourceRoot: string;
 
@@ -91,6 +124,8 @@ module RES {
          * 是否被资源管理器进行管理，默认值为 false
          */
         extra?: boolean;
+
+        promise?: Promise<any>;
 
     }
 
@@ -133,7 +168,11 @@ module RES {
         /**
          * @internal
          */
-        public getGroupByName(name: string, shouldNotBeNull?: true): ResourceInfo[];
+        public getGroupByName(name: string, shouldNotBeNull: true): ResourceInfo[];
+        /**
+         * @internal
+         */
+        public getGroupByName(name: string): ResourceInfo[] | null;
         /**
          * @internal
          */
@@ -143,16 +182,16 @@ module RES {
             let result: ResourceInfo[] = [];
             if (!group) {
                 if (shouldNotBeNull) {
-                    throw `none group ${name}`
+                    throw new RES.ResourceManagerError(2005, name)
                 }
                 return null;
             }
-            for (var key of group) {
-                let r = this.getResource(key, true);
-                result.push(r);
-                // if (r) {
-
-                // }
+            for (var paramKey of group) {
+                var { key, subkey } = manager.config.getResourceWithSubkey(paramKey, true);
+                let r = manager.config.getResource(key, true);
+                if (result.indexOf(r) == -1) {
+                    result.push(r);
+                }
             }
             return result;
         }
@@ -182,23 +221,44 @@ module RES {
                 return "unknown";
             }
         }
+        /**
+         * @internal
+         */
+        getResourceWithSubkey(key: string): { r: ResourceInfo, key: string, subkey: string } | null
+        /**
+         * @internal
+         */
+        getResourceWithSubkey(key: string, shouldNotBeNull: true): { r: ResourceInfo, key: string, subkey: string }
+        /**
+         * @internal
+         */
+        getResourceWithSubkey(key: string, shouldNotBeNull: false): { r: ResourceInfo, key: string, subkey: string } | null
 
-        public parseResKey(key: string) {
+        getResourceWithSubkey(key: string, shouldNotBeNull?: boolean): { r: ResourceInfo, key: string, subkey: string } | null {
             key = this.getKeyByAlias(key);
             let index = key.indexOf("#");
+            let subkey = "";
             if (index >= 0) {
-                return {
-                    key: key.substr(0, index),
-                    subkey: key.substr(index + 1)
+                subkey = key.substr(index + 1)
+                key = key.substr(0, index);
+
+            }
+            let r = this.getResource(key);
+            if (!r) {
+                if (shouldNotBeNull) {
+                    let msg = subkey ? `${key}#${subkey}` : key;
+                    throw new ResourceManagerError(2006, msg);
                 }
+                else {
+                    return null;
+                }
+
             }
             else {
                 return {
-                    key,
-                    subkey: ""
+                    r, key, subkey
                 }
             }
-
         }
 
 
@@ -227,14 +287,16 @@ module RES {
             if (!path) {
                 path = path_or_alias;
             }
-            let r = getResourceInfo(path);
+            let file = getResourceInfo(path)
+            let r: ResourceInfo = file;
             if (!r) {
                 if (shouldNotBeNull) {
-                    throw `none resource url or alias : ${path_or_alias}`;
+                    throw new ResourceManagerError(2006, path_or_alias)
                 }
                 return null;
 
             }
+            r
             return r;
         }
 
@@ -250,6 +312,10 @@ module RES {
             return this.getGroupByName(name);
 
         }
+
+        // public getResourceInfos(folderName: string) {
+        //     this.config.resources[]
+        // }
 
         /**
          * 创建自定义的加载资源组,注意：此方法仅在资源配置文件加载完成后执行才有效。
@@ -272,12 +338,8 @@ module RES {
                     let groupInfo = this.config.groups[key];
                     group = group.concat(groupInfo);
                 }
-                else if (this.config.alias[key] || this.config.resources[key]) {
-                    group = group.concat(key);
-                }
                 else {
                     group = group.concat(key);
-                    console.warn(`resource not exist : ${key}`);
                 }
             }
 
@@ -326,44 +388,6 @@ module RES {
         public parseConfig(data: Data): void {
 
             this.config = data;
-
-            let resource = data.resources;
-
-
-
-
-            let loop = (r, prefix, walk: (r: ResourceInfo) => void) => {
-                for (var key in r) {
-                    let p = prefix ? prefix + "/" + key : key;
-                    var f = r[key];
-                    if (isFile(f)) {
-
-                        if (typeof f === 'string') {
-                            f = { url: f, name: p };
-                            r[key] = f;
-                        }
-                        else {
-                            f['name'] = p;
-                        }
-                        walk(f);
-                    }
-                    else {
-                        loop(f, p, walk);
-                    }
-
-                }
-            }
-
-            let isFile = (r) => {
-                return typeof r === "string" || r.url != null;
-            }
-
-            loop(resource, "", value => {
-                if (!value.type) {
-                    value.type = this.__temp__get__type__via__url(value.url);
-                }
-            })
-
             FileSystem.data = data.resources;
 
             // if (!data)

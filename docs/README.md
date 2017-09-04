@@ -1,77 +1,46 @@
-# 白鹭资源管理框架
+# Egret 资源管理框架游心乐动定制版
 
+## 核心功能
 
-## 配置
-
+* 遵循 ES6 Promise 标准的异步语法
+``` javascript
+RES.loadConfig().then(()=>{
+    RES.getResAsync("assets/bg.jpg");
+}).then(()=>{
+    RES.getResAsync("assets/icon.jpg");
+});
 ```
-@RES.mapConfig("config.resjs", () => "resource")
-class Main extends egret.DisplayObjectContainer {
-
-    constructor(){
-        super();
-        RES.loadConfig();
-    }
-}
+* 支持 ES2015 async / await 异步语法 ( 依赖白鹭引擎4.0版本 )
+``` javascript
+await RES.loadConfig()
+await RES.getResAsync("assets/bg.jpg");
+await RES.getResAsync("assets/icon.jpg");
 ```
-白鹭资源管理框架采用 ES2015 的装饰器语法进行配置。
+## 如何使用
+* 在命令行中执行 ``` npm install yxgames-h5-resource-manager -g ``` 安装命令行工具
+
+* 执行 ```res init ``` 初始化工具集，根目录生成ini文件夹，包含工具配置文件以及readme
+
+* 执行 ```res watch ``` 监听资源变更，自动更新default.res.json```
+
+* 执行 ```res export ``` 导出数据库配置文件到项目中,具体目录需要在ini.json文件中配置
+
+* 执行 ```res json2ts ``` 将多语言文件导出为ts脚本，对应目录需要在ni.json文件中配置
+
+* 执行 ```res upgrade { your-project }``` 将旧版 res 模块升级为新版本，升级过程会完成下述操作
+    
+    * 将 ```egret-resource-manager``` 中包含的新版本资源管理系统的源代码复制到项目文件夹的 libs/modules 目录下
+    
+    * 将 ```egretProperties.json``` 中的 ```res``` 字段修改为 ```resourcemanager```
+
+* 当游戏资源发生变化后，执行```res build { your_project }```，更新资源配置
 
 
-<a name="upgrade-decorator">
-> 如果开发者从老项目迁移到新版资源管理框架，
-当没有配置 RES.mapConfig 注解时，
-会强制添加名为 "config.resjs" 的配置，
-并忽略 RES.loadConfig() 中的参数
+# 使用 ResourceManager 发布资源
+## 执行过程
 
-<a name="processor">
-## 资源生命周期
-
-任意一个资源的生命周期都遵循以下机制：
-
-加载 -> 处理 -> 持有 -> 销毁实例 -> 销毁缓存
-
-处理器（ Processor ）参与整个生命周期过程，并提供必要的函数供开发者进行扩展
-
-
-## 自定义处理器
-
-开发者如想自定义处理器，首先需要遵循以下接口
-
-```typescript
-var customProcessor:RES.processor.Processor = {
-
-    onLoadStart(host,resource){
-        return new Promise(( reslove ,reject ) => {
-
-        })
-    },
-
-    onRemoveStart(host,resource){
-        return new Promise(( reslove ,reject ) => {
-
-        })
-    },
-
-    getData(host, resource, key, subkey) => { //可选函数
-
-    }
-
-}
-```
-
-编写完自定义处理器后，需要针对类型进行映射
-
-```
-RES.processor.map("customType",customProcessor);
-```
-并在 ```config.resjs```中将特定文件的类型设置为 ```customType```
-
-
-
-## 不兼容的变化
-
-* RES.Analyzer 相关 API 已被废弃，开发者应使用 RES.processor.Processor API 进行替换
-* ```RES.getResAsync("sheet.json#icon")``` 如果 ```sheet.json```尚未加载，将会返回一个 null，而之前的版本会去自动加载并返回 ```sheet.json#icon```所对应的 Texture
-> 这条改动未来可能会被调整回去
-
-
-
+* 在项目的 ```egretProperties.json``` 中添加```"resources": []```
+* 执行 ``` egret publish --version version1 ``` 完成游戏 js 文件编译加密过程
+* 执行 ``` res publish . bin-release/web/version1 ``` 完成资源发布和 js 文件发布
+* 将游戏资源上传至游戏远程服务器 / CDN 中，不要发布到另一个文件夹，
+* 增加将游戏配置文件打包zip,并添加crc32

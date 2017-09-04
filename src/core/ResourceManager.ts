@@ -21,7 +21,6 @@ module RES {
                     return value;
                 }
             });
-
         }
     }
 
@@ -41,18 +40,22 @@ module RES {
 
     export var host: ProcessHost = {
 
+        state: {},
+
         get resourceConfig() {
             return manager.config;
         },
 
-        load: (r: ResourceInfo, processor: processor.Processor | undefined) => {
+        load: (r: ResourceInfo, processor?: processor.Processor) => {
             if (!processor) {
                 processor = host.isSupport(r);
             }
             if (!processor) {
                 throw new ResourceManagerError(2001, r.name, r.type);
             }
-            return processor.onLoadStart(host, r)
+            host.state[r.name] = 1;
+            let promise = processor.onLoadStart(host, r);
+            return promise;
         },
 
         unload(r: ResourceInfo) {
@@ -63,6 +66,7 @@ module RES {
             }
             let processor = host.isSupport(r);
             if (processor) {
+                host.state[r.name] = 3;
                 return processor.onRemoveStart(host, r)
                     .then(result => {
                         host.remove(r);
@@ -75,9 +79,8 @@ module RES {
             }
         },
 
-
-
         save(resource: ResourceInfo, data: any) {
+            host.state[resource.name] = 2;
             __tempCache[resource.url] = data;
         },
 
@@ -87,6 +90,7 @@ module RES {
         },
 
         remove(resource: ResourceInfo) {
+            host.state[resource.name] = 0;
             delete __tempCache[resource.url];
         },
 
@@ -94,7 +98,6 @@ module RES {
             return RES.processor.isSupport(resource);
         }
     }
-
 
     export namespace manager {
 
@@ -124,12 +127,10 @@ module RES {
             systemPid++;
             //todo 销毁整个 ResourceManager上下文全部内容
         }
-
-
     }
-
-
     export interface ProcessHost {
+
+        state: { [index: string]: number }
 
         resourceConfig: ResourceConfig;
 
@@ -161,11 +162,14 @@ module RES {
             2001: "{0}解析失败,不支持指定解析类型:\'{1}\'，请编写自定义 Processor ，更多内容请参见 https://github.com/egret-labs/resourcemanager/blob/master/docs/README.md#processor",
             2002: "Analyzer 相关API 在 ResourceManager 中不再支持，请编写自定义 Processor ，更多内容请参见 https://github.com/egret-labs/resourcemanager/blob/master/docs/README.md#processor",
             2003: "{0}解析失败,错误原因:{1}",
-            2004: "无法找到文件类型:{0}"
+            2004: "无法找到文件类型:{0}",
+            2005: "资源配置文件中无法找到特定的资源组:{0}",
+            2006: "资源配置文件中无法找到特定的资源:{0}"
         }
 
         /**
          * why instanceof e  != ResourceManagerError ???
+         * see link : https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
          */
         private __resource_manager_error__ = true;
 
@@ -175,15 +179,22 @@ module RES {
             this.message = ResourceManagerError.errorMessage[code].replace("{0}", replacer).replace("{1}", replacer2);
         }
     }
-
-
 }
 
 namespace RES {
+    /**
+     * Promise的回调函数集合
+     */
     export interface PromiseTaskReporter {
 
+        /**
+         * 进度回调
+         */
         onProgress?: (current: number, total: number) => void;
 
+        /**
+         * 取消回调
+         */
         onCancel?: () => void;
 
     }

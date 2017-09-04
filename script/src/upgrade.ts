@@ -4,7 +4,7 @@ import * as fs from 'fs-extra-promise';
 
 import * as resource from './';
 
-export async function run(projectPath) {
+export async function upgrade(projectPath) {
     async function copyLibrary() {
         let folder = path.resolve(__dirname, "../../")
         let source = path.join(folder, "bin");

@@ -21,26 +21,37 @@ declare module RES {
 }
 declare type ResourceRootSelector<T extends string> = () => T;
 declare type ResourceTypeSelector = (file: string) => string;
+declare type ResourceNameSelector = (file: string) => string;
+declare type ResourceMergerSelector = (file: string) => {
+    path: string;
+    alias: string;
+};
 declare module RES {
+    var resourceTypeSelector: ResourceTypeSelector;
+    var resourceNameSelector: ResourceNameSelector;
+    function mapResourceName(nameSelector: ResourceNameSelector): (target: any) => void;
+    function mapResourceType(typeSelector: ResourceTypeSelector): (target: any) => void;
+    function mapResourceMerger(mergerSelector: ResourceMergerSelector): (target: any) => void;
     /**
-   * @language en_US
    * Definition profile.
    * @param url Configuration file path (path resource.json).
    * @param resourceRoot Resource path. All URL in the configuration is the relative value of the path. The ultimate URL is the value of the sum of the URL of the string and the resource in the configuration.
    * @param type Configuration file format. Determine what parser to parse the configuration file. Default "json".
    * @version Egret 3.1.5
    * @platform Web,Native
+   * @language en_US
    */
     /**
-     * @language zh_CN
      * 定义配置文件。
      * @param url 配置文件路径(resource.json的路径)。
      * @param resourceRoot 资源根路径。配置中的所有url都是这个路径的相对值。最终url是这个字符串与配置里资源项的url相加的值。
      * @param type 配置文件的格式。确定要用什么解析器来解析配置文件。默认"json"
      * @version Egret 3.1.5
      * @platform Web,Native
+     * @language zh_CN
      */
-    function mapConfig<T extends string>(url: string, rootSelector: ResourceRootSelector<T>, typeSelector: ResourceTypeSelector): (target: any) => void;
+    function mapConfig<T extends string>(url: string, rootSelector: ResourceRootSelector<T>, typeSelector?: ResourceTypeSelector): (target: any) => void;
+    function setConfigURL(url: string): void;
     var resourceRoot: string;
     interface ResourceInfo {
         url: string;
@@ -53,6 +64,7 @@ declare module RES {
          * 是否被资源管理器进行管理，默认值为 false
          */
         extra?: boolean;
+        promise?: Promise<any>;
     }
     interface Data {
         resources: Dictionary;
@@ -73,10 +85,6 @@ declare module RES {
         resourceRoot: string;
         constructor();
         __temp__get__type__via__url(url_or_alias: string): string;
-        parseResKey(key: string): {
-            key: string;
-            subkey: string;
-        };
         getKeyByAlias(aliasName: string): string;
         /**
          * 创建自定义的加载资源组,注意：此方法仅在资源配置文件加载完成后执行才有效。
@@ -131,6 +139,9 @@ declare module RES {
         function destory(): void;
     }
     interface ProcessHost {
+        state: {
+            [index: string]: number;
+        };
         resourceConfig: ResourceConfig;
         load: (resource: ResourceInfo, processor?: processor.Processor) => Promise<any>;
         unload: (resource: ResourceInfo) => Promise<any>;
@@ -147,17 +158,29 @@ declare module RES {
             2002: string;
             2003: string;
             2004: string;
+            2005: string;
+            2006: string;
         };
         /**
          * why instanceof e  != ResourceManagerError ???
+         * see link : https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
          */
         private __resource_manager_error__;
         constructor(code: number, replacer?: Object, replacer2?: Object);
     }
 }
 declare namespace RES {
+    /**
+     * Promise的回调函数集合
+     */
     interface PromiseTaskReporter {
+        /**
+         * 进度回调
+         */
         onProgress?: (current: number, total: number) => void;
+        /**
+         * 取消回调
+         */
         onCancel?: () => void;
     }
 }
@@ -180,102 +203,103 @@ declare module RES.processor {
     var FontProcessor: Processor;
     var SoundProcessor: Processor;
     var MovieClipProcessor: Processor;
+    const MergeJSONProcessor: Processor;
+    var ResourceConfigProcessor: Processor;
     var PVRProcessor: Processor;
 }
 declare module RES {
     /**
-     * @language en_US
      * The events of resource loading.
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 资源加载事件。
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     class ResourceEvent extends egret.Event {
         /**
-         * @language en_US
          * Failure event for a load item.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 一个加载项加载失败事件。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         static ITEM_LOAD_ERROR: string;
         /**
-         * @language en_US
          * Configure file to load and parse the completion event. Note: if a configuration file is loaded, it will not be thrown out, and if you want to handle the configuration loading failure, monitor the CONFIG_LOAD_ERROR event.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 配置文件加载并解析完成事件。注意：若有配置文件加载失败，将不会抛出此事件，若要处理配置加载失败，请同时监听 CONFIG_LOAD_ERROR 事件。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         static CONFIG_COMPLETE: string;
         /**
-         * @language en_US
          * Configuration file failed to load.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 配置文件加载失败事件。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         static CONFIG_LOAD_ERROR: string;
         /**
-         * @language en_US
          * Delay load group resource loading progress event.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 延迟加载组资源加载进度事件。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         static GROUP_PROGRESS: string;
         /**
-         * @language en_US
          * Delay load group resource to complete event. Note: if you have a resource item loading failure, the event will not be thrown, if you want to handle the group load failure, please listen to the GROUP_LOAD_ERROR event.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 延迟加载组资源加载完成事件。注意：若组内有资源项加载失败，将不会抛出此事件，若要处理组加载失败，请同时监听 GROUP_LOAD_ERROR 事件。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         static GROUP_COMPLETE: string;
         /**
-         * @language en_US
          * Delayed load group resource failed event.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 延迟加载组资源加载失败事件。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         static GROUP_LOAD_ERROR: string;
         /**
-         * @language en_US
          * Creates an Event object to pass as a parameter to event listeners.
          * @param type  The type of the event, accessible as Event.type.
          * @param bubbles  Determines whether the Event object participates in the bubbling stage of the event flow. The default value is false.
@@ -283,9 +307,9 @@ declare module RES {
          * @version Egret 2.4
          * @platform Web,Native
          * @private
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 创建一个作为参数传递给事件侦听器的 Event 对象。
          * @param type  事件的类型，可以作为 Event.type 访问。
          * @param bubbles  确定 Event 对象是否参与事件流的冒泡阶段。默认值为 false。
@@ -293,180 +317,291 @@ declare module RES {
          * @version Egret 2.4
          * @platform Web,Native
          * @private
+         * @language zh_CN
          */
         constructor(type: string, bubbles?: boolean, cancelable?: boolean);
         /**
-         * @language en_US
          * File number that has been loaded.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 已经加载的文件数。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         itemsLoaded: number;
         /**
-         * @language en_US
          * Total file number to load.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 要加载的总文件数。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         itemsTotal: number;
         /**
-         * @language en_US
          * Resource group name.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 资源组名。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         groupName: string;
         /**
-         * @language en_US
          * An item of information that is finished by the end of a load.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 一次加载项加载结束的项信息对象。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         resItem: ResourceItem;
     }
 }
 declare module RES {
     /**
-     * @language en_US
      * Resource term. One of the resources arrays in resource.json.
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 资源项。对应 resource.json 中 resources 数组中的一项。
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     namespace ResourceItem {
+        /**
+         * XML file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * XML 文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
+        const TYPE_XML: string;
+        /**
+         * Picture file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * 图片文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
         const TYPE_IMAGE: string;
+        /**
+         * Binary file.
+         * @version Egret 2.4
+         * @platform Web
+         * @language en_US
+         */
+        /**
+         * 二进制文件。
+         * @version Egret 2.4
+         * @platform Web
+         * @language zh_CN
+         */
+        const TYPE_BIN: string;
+        /**
+         * Text file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * 文本文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
         const TYPE_TEXT: string;
+        /**
+         * JSON file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * JSON 文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
+        const TYPE_JSON: string;
+        /**
+         * SpriteSheet file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * SpriteSheet 文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
+        const TYPE_SHEET: string;
+        /**
+         * BitmapTextSpriteSheet file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * BitmapTextSpriteSheet 文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
+        const TYPE_FONT: string;
+        /**
+         * Sound file.
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language en_US
+         */
+        /**
+         * 声音文件。
+         * @version Egret 2.4
+         * @platform Web,Native
+         * @language zh_CN
+         */
+        const TYPE_SOUND: string;
         function convertToResItem(r: ResourceInfo): ResourceItem;
     }
     interface ResourceItem extends ResourceInfo {
         /**
-         * @language en_US
          * Name of resource term.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 加载项名称。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         name: string;
         /**
-         * @language en_US
          * URL of resource term.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 要加载的文件地址。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         url: string;
         /**
-         * @language en_US
          * Type of resource term.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 加载项文件类型。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         type: string;
         /**
-         * @language en_US
          * The raw data object to be referenced.
          * @version Egret 2.4
          * @platform Web,Native
+         * @language en_US
          */
         /**
-         * @language zh_CN
          * 被引用的原始数据对象。
          * @version Egret 2.4
          * @platform Web,Native
+         * @language zh_CN
          */
         data: ResourceInfo;
     }
 }
 declare module RES {
     let checkNull: MethodDecorator;
+    /**
+     * 功能开关
+     *  LOADING_STATE：处理重复加载
+     */
+    let FEATURE_FLAG: {
+        LOADING_STATE: number;
+    };
     namespace upgrade {
         function setUpgradeGuideLevel(level: "warning" | "silent"): void;
         let checkDecorator: MethodDecorator;
     }
 }
+declare namespace RES {
+}
 declare module RES {
     type GetResAsyncCallback = (value?: any, key?: string) => any;
     /**
-     * @language en_US
      * Conduct mapping injection with class definition as the value.
      * @param type Injection type.
      * @param analyzerClass Injection type classes need to be resolved.
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/Resource.ts
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 以类定义为值进行映射注入。
      * @param type 注入的类型。
      * @param analyzerClass 注入类型需要解析的类。
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/Resource.ts
+     * @language zh_CN
      */
     function registerAnalyzer(type: string, analyzerClass: any): void;
     /**
-     * @language en_US
      * Load configuration file and parse.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 加载配置文件并解析。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function loadConfig(url?: string, resourceRoot?: string): Promise<void>;
     /**
-     * @language en_US
      * Load a set of resources according to the group name.
      * @param name Group name to load the resource group.
      * @param priority Load priority can be negative, the default value is 0.
@@ -474,9 +609,9 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 根据组名加载一组资源。
      * @param name 要加载资源组的组名。
      * @param priority 加载优先级,可以为负数,默认值为 0。
@@ -484,29 +619,29 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function loadGroup(name: string, priority?: number, reporter?: PromiseTaskReporter): Promise<void>;
     /**
-     * @language en_US
      * Check whether a resource group has been loaded.
      * @param name Group name。
      * @returns Is loading or not.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 检查某个资源组是否已经加载完成。
      * @param name 组名。
      * @returns 是否正在加载。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function isGroupLoaded(name: string): boolean;
     /**
-     * @language en_US
      * A list of groups of loading is obtained according to the group name.
      * @param name Group name.
      * @returns The resource item array of group.
@@ -514,9 +649,9 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 根据组名获取组加载项列表。
      * @param name 组名。
      * @returns 加载项列表。
@@ -524,10 +659,10 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function getGroupByName(name: string): Array<ResourceItem>;
     /**
-     * @language en_US
      * Create a custom load resource group, note that this method is valid only after the resource configuration file is loaded.
      * <br>You can monitor the ResourceEvent.CONFIG_COMPLETE event to verify that the configuration is complete.
      * @param name Group name to create the load resource group.
@@ -537,9 +672,9 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 创建自定义的加载资源组,注意：此方法仅在资源配置文件加载完成后执行才有效。
      * <br>可以监听 ResourceEvent.CONFIG_COMPLETE 事件来确认配置加载完成。
      * @param name 要创建的加载资源组的组名。
@@ -549,27 +684,27 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function createGroup(name: string, keys: Array<string>, override?: boolean): boolean;
     /**
-     * @language en_US
      * Check whether the configuration file contains the specified resources.
      * @param key A sbuKeys attribute or name property in a configuration file.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 检查配置文件里是否含有指定的资源。
      * @param key 对应配置文件里的 name 属性或 sbuKeys 属性的一项。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function hasRes(key: string): boolean;
     /**
-     * @language en_US
      * The synchronization method for obtaining the cache has been loaded with the success of the resource.
      * <br>The type of resource and the corresponding return value types are as follows:
      * <br>RES.ResourceItem.TYPE_BIN : ArrayBuffer JavaScript primary object
@@ -587,9 +722,9 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 同步方式获取缓存的已经加载成功的资源。
      * <br>资源类型和对应的返回值类型关系如下：
      * <br>RES.ResourceItem.TYPE_BIN : ArrayBuffer JavaScript 原生对象
@@ -606,10 +741,10 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function getRes(key: string): any;
     /**
-     * @language en_US
      * Asynchronous mode to get the resources in the configuration. As long as the resources exist in the configuration file, you can get it in an asynchronous way.
      * @param key A sbuKeys attribute or name property in a configuration file.
      * @param compFunc Call back function. Example：compFunc(data,key):void.
@@ -617,9 +752,9 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 异步方式获取配置里的资源。只要是配置文件里存在的资源，都可以通过异步方式获取。
      * @param key 对应配置文件里的 name 属性或 sbuKeys 属性的一项。
      * @param compFunc 回调函数。示例：compFunc(data,key):void。
@@ -627,11 +762,11 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function getResAsync(key: string): Promise<any>;
     function getResAsync(key: string, compFunc: GetResAsyncCallback, thisObject: any): void;
     /**
-     * @language en_US
      * Access to external resources through the full URL.
      * @param url The external path to load the file.
      * @param compFunc Call back function. Example：compFunc(data,url):void。
@@ -640,9 +775,9 @@ declare module RES {
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/GetResByUrl.ts
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 通过完整URL方式获取外部资源。
      * @param url 要加载文件的外部路径。
      * @param compFunc 回调函数。示例：compFunc(data,url):void。
@@ -651,10 +786,10 @@ declare module RES {
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/GetResByUrl.ts
+     * @language zh_CN
      */
     function getResByUrl(url: string, compFunc: Function, thisObject: any, type?: string): void;
     /**
-     * @language en_US
      * Destroy a single resource file or a set of resources to the cache data, to return whether to delete success.
      * @param name Name attribute or resource group name of the load item in the configuration file.
      * @param force Destruction of a resource group when the other resources groups have the same resource situation whether the resources will be deleted, the default value true.
@@ -662,9 +797,9 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 销毁单个资源文件或一组资源的缓存数据,返回是否删除成功。
      * @param name 配置文件中加载项的name属性或资源组名。
      * @param force 销毁一个资源组时其他资源组有同样资源情况资源是否会被删除，默认值 true。
@@ -672,44 +807,44 @@ declare module RES {
      * @returns 是否销毁成功。
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
-    function destroyRes(name: string, force?: boolean): boolean;
+    function destroyRes(name: string, force?: boolean): Promise<boolean>;
     /**
-     * @language en_US
      * Sets the maximum number of concurrent load threads, the default value is 2.
      * @param thread The number of concurrent loads to be set.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 设置最大并发加载线程数量，默认值是 2。
      * @param thread 要设置的并发加载数。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function setMaxLoadingThread(thread: number): void;
     /**
-     * @language en_US
      * Sets the number of retry times when the resource failed to load, and the default value is 3.
      * @param retry To set the retry count.
      * @includeExample extension/resource/Resource.ts
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 设置资源加载失败时的重试次数，默认值是 3。
      * @param retry 要设置的重试次数。
      * @includeExample extension/resource/Resource.ts
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function setMaxRetryTimes(retry: number): void;
     /**
-     * @language en_US
      * Add event listeners, reference ResourceEvent defined constants.
      * @param type Event name。
      * @param listener Listener functions for handling events. This function must accept the Event object as its only parameter, and can't return any results,
@@ -725,9 +860,9 @@ declare module RES {
      * @see RES.ResourceEvent
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 添加事件侦听器,参考 ResourceEvent 定义的常量。
      * @param type 事件的类型。
      * @param listener 处理事件的侦听器函数。此函数必须接受 Event 对象作为其唯一的参数，并且不能返回任何结果，
@@ -742,10 +877,10 @@ declare module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function addEventListener(type: string, listener: (event: egret.Event) => void, thisObject: any, useCapture?: boolean, priority?: number): void;
     /**
-     * @language en_US
      * Remove event listeners, reference ResourceEvent defined constants.
      * @param type Event name。
      * @param listener Listening function。
@@ -753,9 +888,9 @@ declare module RES {
      * @param useCapture Is used to capture, and this property is only valid in the display list.
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 移除事件侦听器,参考ResourceEvent定义的常量。
      * @param type 事件名。
      * @param listener 侦听函数。
@@ -763,21 +898,22 @@ declare module RES {
      * @param useCapture 是否使用捕获，这个属性只在显示列表中生效。
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     function removeEventListener(type: string, listener: (event: egret.Event) => void, thisObject: any, useCapture?: boolean): void;
     /**
-     * @language en_US
      * Adding a custom resource configuration.
      * @param data To add configuration.
      * @version Egret 3.1.6
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 自定义添加一项资源配置。
      * @param data 要添加的配置。
      * @version Egret 3.1.6
      * @platform Web,Native
+     * @language zh_CN
      */
     function $addResourceData(data: {
         name: string;
@@ -788,7 +924,6 @@ declare module RES {
      * @private
      */
     class Resource extends egret.EventDispatcher {
-        private loadedGroups;
         /**
          * 构造函数
          * @method RES.constructor
@@ -825,6 +960,7 @@ declare module RES {
          */
         loadGroup(name: string, priority?: number, reporter?: PromiseTaskReporter): Promise<any>;
         private _loadGroup(name, priority?, reporter?);
+        loadResources(keys: string[], reporter?: PromiseTaskReporter): Promise<ResourceInfo | ResourceInfo[]>;
         /**
          * 创建自定义的加载资源组,注意：此方法仅在资源配置文件加载完成后执行才有效。
          * 可以监听ResourceEvent.CONFIG_COMPLETE事件来确认配置加载完成。
@@ -838,7 +974,7 @@ declare module RES {
         /**
          * 检查配置文件里是否含有指定的资源
          * @method RES.hasRes
-         * @param key {string} 对应配置文件里的name属性或sbuKeys属性的一项。
+         * @param key {string} 对应配置文件里的name属性或subKeys属性的一项。
          * @returns {boolean}
          */
         hasRes(key: string): boolean;
@@ -874,7 +1010,7 @@ declare module RES {
          * @param force {boolean} 销毁一个资源组时其他资源组有同样资源情况资源是否会被删除，默认值true
          * @returns {boolean}
          */
-        destroyRes(name: string, force?: boolean): boolean;
+        destroyRes(name: string, force?: boolean): Promise<boolean>;
         /**
          * 设置最大并发加载线程数量，默认值是2.
          * @method RES.setMaxLoadingThread

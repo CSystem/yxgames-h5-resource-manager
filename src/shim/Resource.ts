@@ -36,22 +36,22 @@ module RES {
 
 
     /**
-     * @language en_US
      * Conduct mapping injection with class definition as the value.
      * @param type Injection type.
      * @param analyzerClass Injection type classes need to be resolved.
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/Resource.ts
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 以类定义为值进行映射注入。
      * @param type 注入的类型。
      * @param analyzerClass 注入类型需要解析的类。
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/Resource.ts
+     * @language zh_CN
      */
     export function registerAnalyzer(type: string, analyzerClass: any) {
         throw new ResourceManagerError(2002);
@@ -59,24 +59,23 @@ module RES {
 
 
     /**
-     * @language en_US
      * Load configuration file and parse.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 加载配置文件并解析。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function loadConfig(url?: string, resourceRoot?: string): Promise<void> {
         return instance.loadConfig();
     }
     /**
-     * @language en_US
      * Load a set of resources according to the group name.
      * @param name Group name to load the resource group.
      * @param priority Load priority can be negative, the default value is 0.
@@ -84,9 +83,9 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 根据组名加载一组资源。
      * @param name 要加载资源组的组名。
      * @param priority 加载优先级,可以为负数,默认值为 0。
@@ -94,33 +93,33 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function loadGroup(name: string, priority: number = 0, reporter?: PromiseTaskReporter): Promise<void> {
         return instance.loadGroup(name, priority, reporter);
     }
     /**
-     * @language en_US
      * Check whether a resource group has been loaded.
      * @param name Group name。
      * @returns Is loading or not.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 检查某个资源组是否已经加载完成。
      * @param name 组名。
      * @returns 是否正在加载。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function isGroupLoaded(name: string): boolean {
         return instance.isGroupLoaded(name);
     }
     /**
-     * @language en_US
      * A list of groups of loading is obtained according to the group name.
      * @param name Group name.
      * @returns The resource item array of group.
@@ -128,9 +127,9 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 根据组名获取组加载项列表。
      * @param name 组名。
      * @returns 加载项列表。
@@ -138,14 +137,12 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function getGroupByName(name: string): Array<ResourceItem> {
-        if (null == instance.getGroupByName(name))
-            return [];
         return instance.getGroupByName(name).map(r => ResourceItem.convertToResItem(r));
     }
     /**
-     * @language en_US
      * Create a custom load resource group, note that this method is valid only after the resource configuration file is loaded.
      * <br>You can monitor the ResourceEvent.CONFIG_COMPLETE event to verify that the configuration is complete.
      * @param name Group name to create the load resource group.
@@ -155,9 +152,9 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 创建自定义的加载资源组,注意：此方法仅在资源配置文件加载完成后执行才有效。
      * <br>可以监听 ResourceEvent.CONFIG_COMPLETE 事件来确认配置加载完成。
      * @param name 要创建的加载资源组的组名。
@@ -167,32 +164,32 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function createGroup(name: string, keys: Array<string>, override: boolean = false): boolean {
         return instance.createGroup(name, keys, override);
     }
     /**
-     * @language en_US
      * Check whether the configuration file contains the specified resources.
      * @param key A sbuKeys attribute or name property in a configuration file.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 检查配置文件里是否含有指定的资源。
      * @param key 对应配置文件里的 name 属性或 sbuKeys 属性的一项。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function hasRes(key: string): boolean {
         return instance.hasRes(key);
     }
 
     /**
-     * @language en_US
      * The synchronization method for obtaining the cache has been loaded with the success of the resource.
      * <br>The type of resource and the corresponding return value types are as follows:
      * <br>RES.ResourceItem.TYPE_BIN : ArrayBuffer JavaScript primary object
@@ -210,9 +207,9 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 同步方式获取缓存的已经加载成功的资源。
      * <br>资源类型和对应的返回值类型关系如下：
      * <br>RES.ResourceItem.TYPE_BIN : ArrayBuffer JavaScript 原生对象
@@ -229,12 +226,12 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function getRes(key: string): any {
         return instance.getRes(key);
     }
     /**
-     * @language en_US
      * Asynchronous mode to get the resources in the configuration. As long as the resources exist in the configuration file, you can get it in an asynchronous way.
      * @param key A sbuKeys attribute or name property in a configuration file.
      * @param compFunc Call back function. Example：compFunc(data,key):void.
@@ -242,9 +239,9 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 异步方式获取配置里的资源。只要是配置文件里存在的资源，都可以通过异步方式获取。
      * @param key 对应配置文件里的 name 属性或 sbuKeys 属性的一项。
      * @param compFunc 回调函数。示例：compFunc(data,key):void。
@@ -252,6 +249,7 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function getResAsync(key: string): Promise<any>
     export function getResAsync(key: string, compFunc: GetResAsyncCallback, thisObject: any): void
@@ -259,7 +257,6 @@ module RES {
         return instance.getResAsync.apply(instance, arguments);
     }
     /**
-     * @language en_US
      * Access to external resources through the full URL.
      * @param url The external path to load the file.
      * @param compFunc Call back function. Example：compFunc(data,url):void。
@@ -268,9 +265,9 @@ module RES {
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/GetResByUrl.ts
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 通过完整URL方式获取外部资源。
      * @param url 要加载文件的外部路径。
      * @param compFunc 回调函数。示例：compFunc(data,url):void。
@@ -279,12 +276,12 @@ module RES {
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample extension/resource/GetResByUrl.ts
+     * @language zh_CN
      */
     export function getResByUrl(url: string, compFunc: Function, thisObject: any, type: string = ""): void {
         instance.getResByUrl(url, compFunc, thisObject, type);
     }
     /**
-     * @language en_US
      * Destroy a single resource file or a set of resources to the cache data, to return whether to delete success.
      * @param name Name attribute or resource group name of the load item in the configuration file.
      * @param force Destruction of a resource group when the other resources groups have the same resource situation whether the resources will be deleted, the default value true.
@@ -292,9 +289,9 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 销毁单个资源文件或一组资源的缓存数据,返回是否删除成功。
      * @param name 配置文件中加载项的name属性或资源组名。
      * @param force 销毁一个资源组时其他资源组有同样资源情况资源是否会被删除，默认值 true。
@@ -302,52 +299,52 @@ module RES {
      * @returns 是否销毁成功。
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
-    export function destroyRes(name: string, force?: boolean): boolean {
+    export function destroyRes(name: string, force?: boolean): Promise<boolean> {
         return instance.destroyRes(name, force);
     }
     /**
-     * @language en_US
      * Sets the maximum number of concurrent load threads, the default value is 2.
      * @param thread The number of concurrent loads to be set.
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 设置最大并发加载线程数量，默认值是 2。
      * @param thread 要设置的并发加载数。
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function setMaxLoadingThread(thread: number): void {
         instance.setMaxLoadingThread(thread);
     }
 
     /**
-     * @language en_US
      * Sets the number of retry times when the resource failed to load, and the default value is 3.
      * @param retry To set the retry count.
      * @includeExample extension/resource/Resource.ts
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 设置资源加载失败时的重试次数，默认值是 3。
      * @param retry 要设置的重试次数。
      * @includeExample extension/resource/Resource.ts
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function setMaxRetryTimes(retry: number): void {
         instance.setMaxRetryTimes(retry);
     }
 
     /**
-     * @language en_US
      * Add event listeners, reference ResourceEvent defined constants.
      * @param type Event name。
      * @param listener Listener functions for handling events. This function must accept the Event object as its only parameter, and can't return any results,
@@ -363,9 +360,9 @@ module RES {
      * @see RES.ResourceEvent
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 添加事件侦听器,参考 ResourceEvent 定义的常量。
      * @param type 事件的类型。
      * @param listener 处理事件的侦听器函数。此函数必须接受 Event 对象作为其唯一的参数，并且不能返回任何结果，
@@ -380,12 +377,12 @@ module RES {
      * @see #setMaxRetryTimes
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function addEventListener(type: string, listener: (event: egret.Event) => void, thisObject: any, useCapture: boolean = false, priority: number = 0): void {
         instance.addEventListener(type, listener, thisObject, useCapture, priority);
     }
     /**
-     * @language en_US
      * Remove event listeners, reference ResourceEvent defined constants.
      * @param type Event name。
      * @param listener Listening function。
@@ -393,9 +390,9 @@ module RES {
      * @param useCapture Is used to capture, and this property is only valid in the display list.
      * @version Egret 2.4
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 移除事件侦听器,参考ResourceEvent定义的常量。
      * @param type 事件名。
      * @param listener 侦听函数。
@@ -403,6 +400,7 @@ module RES {
      * @param useCapture 是否使用捕获，这个属性只在显示列表中生效。
      * @version Egret 2.4
      * @platform Web,Native
+     * @language zh_CN
      */
     export function removeEventListener(type: string, listener: (event: egret.Event) => void, thisObject: any, useCapture: boolean = false): void {
         instance.removeEventListener(type, listener, thisObject, useCapture);
@@ -410,18 +408,18 @@ module RES {
 
 
     /**
-     * @language en_US
      * Adding a custom resource configuration.
      * @param data To add configuration.
      * @version Egret 3.1.6
      * @platform Web,Native
+     * @language en_US
      */
     /**
-     * @language zh_CN
      * 自定义添加一项资源配置。
      * @param data 要添加的配置。
      * @version Egret 3.1.6
      * @platform Web,Native
+     * @language zh_CN
      */
     export function $addResourceData(data: { name: string, type: string, url: string }): void {
         //这里可能需要其他配置
@@ -434,7 +432,6 @@ module RES {
      */
     export class Resource extends egret.EventDispatcher {
 
-        private loadedGroups: string[] = [];
         /**
          * 构造函数
 		 * @method RES.constructor
@@ -454,6 +451,7 @@ module RES {
         @upgrade.checkDecorator
         @checkCancelation
         public loadConfig(): Promise<void> {
+            native_init();
             return manager.init().then(data => {
                 ResourceEvent.dispatchResourceEvent(this, ResourceEvent.CONFIG_COMPLETE);
             }, error => {
@@ -469,7 +467,8 @@ module RES {
 		 * @returns {boolean}
          */
         public isGroupLoaded(name: string): boolean {
-            return this.loadedGroups.indexOf(name) != -1;
+            let resources = manager.config.getGroupByName(name, true);
+            return resources.every(r => host.get(r) != null);
         }
         /**
          * 根据组名获取组加载项列表
@@ -477,8 +476,8 @@ module RES {
 		 * @param name {string}
 		 * @returns {Array<egret.ResourceItem>}
          */
-        public getGroupByName(name: string): Array<ResourceInfo> {
-            return manager.config.getGroupByName(name);
+        getGroupByName(name: string): Array<ResourceInfo> {
+            return manager.config.getGroupByName(name, true); //这里不应该传入 true，但是为了老版本的 TypeScriptCompiler 兼容性，暂时这样做
         }
 
         /**
@@ -487,7 +486,7 @@ module RES {
 		 * @param name {string}
 		 * @param priority {number}
          */
-        public loadGroup(name: string, priority: number = 0, reporter?: PromiseTaskReporter): Promise<any> {
+        loadGroup(name: string, priority: number = 0, reporter?: PromiseTaskReporter): Promise<any> {
 
             let reporterDelegate = {
                 onProgress: (current, total) => {
@@ -507,7 +506,12 @@ module RES {
 
         @checkCancelation
         private _loadGroup(name: string, priority: number = 0, reporter?: PromiseTaskReporter): Promise<any> {
-            let resources = manager.config.getGroupByName(name);
+            let resources = manager.config.getGroupByName(name, true);
+            return manager.load(resources, reporter);
+        }
+
+        loadResources(keys: string[], reporter?: PromiseTaskReporter) {
+            let resources = keys.map(key => manager.config.getResource(key, true))
             return manager.load(resources, reporter);
         }
 
@@ -527,13 +531,12 @@ module RES {
         /**
          * 检查配置文件里是否含有指定的资源
 		 * @method RES.hasRes
-         * @param key {string} 对应配置文件里的name属性或sbuKeys属性的一项。
+         * @param key {string} 对应配置文件里的name属性或subKeys属性的一项。
 		 * @returns {boolean}
          */
         @checkNull
         public hasRes(key: string): boolean {
-            let name = manager.config.parseResKey(key).key;
-            return manager.config.getResource(name) != null;
+            return manager.config.getResourceWithSubkey(key) != null;
         }
 
         /**
@@ -544,9 +547,11 @@ module RES {
          */
         @checkNull
         public getRes(resKey: string): any {
-            let {key, subkey} = manager.config.parseResKey(resKey);
-            let r = manager.config.getResource(key);
-            if (r) {
+            let result = manager.config.getResourceWithSubkey(resKey);
+            if (result) {
+                let r = result.r;
+                let key = result.key;
+                let subkey = result.subkey;
                 let processor = host.isSupport(r);
                 if (processor && processor.getData && subkey) {
                     return processor.getData(host, r, key, subkey);
@@ -554,7 +559,9 @@ module RES {
                 else {
                     return host.get(r);
                 }
-
+            }
+            else {
+                return null;
             }
         }
 
@@ -572,8 +579,7 @@ module RES {
         @checkCancelation
         public getResAsync(key: string, compFunc?: GetResAsyncCallback, thisObject?: any): Promise<any> | void {
             var paramKey = key;
-            var {key, subkey} = manager.config.parseResKey(key);
-            let r = manager.config.getResource(key, true);
+            var { r, subkey } = manager.config.getResourceWithSubkey(key, true);
             return manager.load(r).then(value => {
                 let processor = host.isSupport(r);
                 if (processor && processor.getData && subkey) {
@@ -620,25 +626,22 @@ module RES {
          * @param force {boolean} 销毁一个资源组时其他资源组有同样资源情况资源是否会被删除，默认值true
 		 * @returns {boolean}
          */
-        public destroyRes(name: string, force: boolean = true): boolean {
+        public async destroyRes(name: string, force: boolean = true) {
             var group = manager.config.getGroup(name);
-
             let remove = (r: ResourceInfo) => {
-
-                host.unload(r);
-                // host.remove(r)
+                return host.unload(r);
             }
 
             if (group && group.length > 0) {
                 for (let item of group) {
-                    remove(item);
+                    await remove(item);
                 }
                 return true;
             }
             else {
                 let item = manager.config.getResource(name);
                 if (item) {
-                    remove(item);
+                    await remove(item);
                     return true;
                 }
                 else {
@@ -688,6 +691,7 @@ module RES {
 
 
 }
+
 
 
 

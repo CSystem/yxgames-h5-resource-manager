@@ -8,59 +8,162 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const vinylfs = require("vinyl-fs");
 const _1 = require("./");
-const c = require("./config");
 const utils = require("egret-node-utils");
 const fs = require("fs-extra-promise");
 const path = require("path");
+const merger = require("./merger");
+const html = require("./html");
+const config = require("./config");
+const zip = require("jszip");
+var map = require('map-stream');
+var crc32 = require("crc32");
 let projectRoot;
-function build(p) {
+let resourceFolder;
+let _configZip;
+function build(p, format, publishPath, debug = false) {
     return __awaiter(this, void 0, void 0, function* () {
+        let resourcePath = publishPath ?
+            path.join(publishPath, (yield config.getConfigViaDecorator(p)).resourceRoot) :
+            undefined;
         let result = yield _1.ResourceConfig.init(p);
         _1.ResourceConfig.typeSelector = result.typeSelector;
-        if (!_1.ResourceConfig.typeSelector) {
-            throw new Error("missing typeSelector in Main.ts");
-        }
-        let executeFilter = (f) => __awaiter(this, void 0, void 0, function* () {
-            let config = _1.ResourceConfig.config;
-            var ext = f.substr(f.lastIndexOf(".") + 1);
-            let type = _1.ResourceConfig.typeSelector(f);
+        _1.ResourceConfig.nameSelector = result.nameSelector;
+        let executeFilter = (url) => __awaiter(this, void 0, void 0, function* () {
+            var ext = url.substr(url.lastIndexOf(".") + 1);
+            merger.walk(url);
+            let type = _1.ResourceConfig.typeSelector(url);
+            let name = _1.ResourceConfig.nameSelector(url);
             if (type) {
-                return { name: f, url: f, type };
+                return { name, url, type };
+            }
+            else {
+                return null;
             }
         });
         projectRoot = p;
-        let resourcePath = path.join(projectRoot, result.resourceRoot);
-        let filename = path.join(resourcePath, "config.json");
+        resourceFolder = path.join(projectRoot, result.resourceRoot);
+        merger.init(resourceFolder);
         let option = {
             relative: true,
             ignoreHiddenFile: true
         };
-        let list = yield utils.walk(resourcePath, () => true, option);
-        let files = yield Promise.all(list.map(executeFilter));
-        files.filter(a => a).forEach(element => _1.ResourceConfig.addFile(element));
-        yield convertResourceJson(projectRoot);
-        yield updateResourceConfigFileContent(filename);
+        let init = (file, cb) => {
+            file.original_relative = file.relative.split("\\").join("/");
+            cb(null, file);
+        };
+        let convert = (file, cb) => {
+            let crc32_file_path = crc32(file.contents);
+            crc32_file_path = `${crc32_file_path.substr(0, 2)}/${crc32_file_path.substr(2)}${file.extname}`;
+            file.path = `${file.base}${crc32_file_path}`;
+            cb(null, file);
+        };
+        let convert2 = (file, cb) => __awaiter(this, void 0, void 0, function* () {
+            let r = yield executeFilter(file.original_relative);
+            if (r) {
+                r.url = file.relative;
+                _1.ResourceConfig.addFile(r, true);
+                cb(null, file);
+            }
+            else {
+                cb(null);
+            }
+        });
+        let list = yield utils.walk(resourceFolder, () => true, option);
+        let outputFile = resourcePath ?
+            path.join(projectRoot, resourcePath, result.resourceConfigFileName) :
+            path.join(resourceFolder, result.resourceConfigFileName);
+        let stream = vinylfs.src([`**/**.*`], { cwd: resourceFolder, base: resourceFolder })
+            .pipe(map(init));
+        if (resourcePath) {
+            stream = stream.pipe(map(convert));
+        }
+        let readCfg = (file, cb) => {
+            if (null == this._configZip) {
+                this._configZip = new zip();
+            }
+            file.original_relative = file.relative.split("\\").join("/");
+            let stat = fs.lstatSync(file.path);
+            if (stat.isDirectory()) {
+                cb(null, file);
+                return;
+            }
+            this._configZip.file(file.original_relative, fs.readFileSync(file.path));
+            cb(null, file);
+        };
+        //资源发布目录
+        let publish_resource_path = publishPath ? path.join(publishPath, "resource_publish") : undefined;
+        if (publish_resource_path) {
+            if (!fs.existsSync(publish_resource_path)) {
+                fs.mkdirsSync(publish_resource_path);
+            }
+        }
+        stream = stream.pipe(map(convert2).on("end", () => __awaiter(this, void 0, void 0, function* () {
+            let config = _1.ResourceConfig.getConfig();
+            yield convertResourceJson(projectRoot, config);
+            yield updateResourceConfigFileContent(outputFile, debug);
+            //await ResourceConfig.generateClassicalConfig(path.join(resourceFolder, "wing.res.json"));
+            merger.output();
+            if (resourcePath) {
+                //修改main.min.js里的config和default版本号
+                //资源发布目录 publish_resource
+                let javascriptFilePath = path.join(publishPath, "main.min.js");
+                let javascriptContent = fs.readFileSync(javascriptFilePath, "utf-8");
+                let configPath = path.join(resourcePath, "config.json");
+                let configContent = fs.readFileSync(configPath, "utf-8");
+                let configCrc32 = crc32(configContent);
+                let configOutputFilePath = rename("config.json", configCrc32);
+                fs.writeFileSync(path.join(publish_resource_path, configOutputFilePath), configContent);
+                let themeConfigPath = path.join(resourcePath, "default.thm.json");
+                let themeConfigContent = fs.readFileSync(themeConfigPath, "utf-8");
+                let themeConfigCrc32 = crc32(themeConfigContent);
+                let themeConfigOutputFilePath = rename("default.thm.json", themeConfigCrc32);
+                fs.writeFileSync(path.join(publish_resource_path, themeConfigOutputFilePath), themeConfigContent);
+                javascriptContent = javascriptContent.replace("config.json", configOutputFilePath);
+                javascriptContent = javascriptContent.replace("default.thm.json", themeConfigOutputFilePath);
+                fs.writeFileSync(javascriptFilePath, javascriptContent, "utf-8");
+                //生成cfg的zip包
+                let cfgstream = vinylfs.src(['./cfg/**'], { cwd: resourceFolder, base: resourceFolder });
+                cfgstream = cfgstream.pipe(map(readCfg).on("end", () => __awaiter(this, void 0, void 0, function* () {
+                    if (this._configZip) {
+                        this._configZip.generateAsync({ type: "uint8array", compression: "DEFLATE", })
+                            .then(function (content) {
+                            let configCrc32 = crc32(content);
+                            let defaultCfgName = "default.cfg.zip";
+                            let outputname = rename(defaultCfgName, configCrc32);
+                            let cfgOutput = path.join(publish_resource_path, outputname);
+                            fs.writeFileSync(cfgOutput, content, "utf-8");
+                            javascriptContent = javascriptContent.replace(defaultCfgName, outputname);
+                            fs.writeFileSync(javascriptFilePath, javascriptContent, "utf-8");
+                        });
+                    }
+                })));
+            }
+        })));
+        if (resourcePath) {
+            stream = stream.pipe(vinylfs.dest(path.join(projectRoot, publish_resource_path)).on("end", () => {
+                html.publish(publishPath);
+            }));
+        }
     });
 }
 exports.build = build;
-function updateResourceConfigFileContent(filename) {
+function rename(fileName, crc32) {
+    let index = fileName.indexOf(".");
+    return fileName.substr(0, index) + "_" + crc32 + fileName.substr(index);
+}
+function updateResourceConfigFileContent(filename, debug) {
     return __awaiter(this, void 0, void 0, function* () {
-        let content = JSON.stringify(_1.ResourceConfig.config, null, "\t");
+        let config = _1.ResourceConfig.generateConfig(debug);
+        let content = JSON.stringify(config, null, "\t");
+        yield fs.mkdirpAsync(path.dirname(filename));
         yield fs.writeFileAsync(filename, content, "utf-8");
         return content;
     });
 }
 exports.updateResourceConfigFileContent = updateResourceConfigFileContent;
-function updateResourceConfigFileContent_2(filename, matcher, data) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let content = yield c.publish(filename, matcher, data);
-        yield fs.writeFileAsync(filename, content, "utf-8");
-        return content;
-    });
-}
-//使用新的config导出,转换旧的resjson为新的configjson
-function convertResourceJson(projectRoot) {
+function convertResourceJson(projectRoot, config) {
     return __awaiter(this, void 0, void 0, function* () {
         let filename = path.join(projectRoot, "resource/default.res.json");
         if (!fs.existsSync(filename)) {
@@ -69,74 +172,42 @@ function convertResourceJson(projectRoot) {
         if (!fs.existsSync(filename)) {
             return;
         }
-        let config = _1.ResourceConfig.config;
         let resourceJson = yield fs.readJSONAsync(filename);
-        let newConfig = {};
         for (let r of resourceJson.resources) {
-            if (null == newConfig.alias)
-                newConfig.alias = {};
-            newConfig.alias[r.name] = r.url;
-            let file = _1.ResourceConfig.getFile(r.url);
-            var lastname = r.url.substr(r.url.lastIndexOf('/') + 1);
-            var prename = r.url.substr(0, r.url.lastIndexOf('/') - 1);
-            var directName = r.url.substr(0, r.url.lastIndexOf('/') + 1);
-            var extion = r.url.substr(r.url.lastIndexOf(".") + 1);
-            var fileNameNoExt = lastname.substr(0, lastname.lastIndexOf("."));
-            var directNameNoExt = r.url.substr(0, r.url.lastIndexOf("."));
-            var list = r.url.split("/");
-            if (null == newConfig.resources) {
-                newConfig.resources = {};
-            }
-            //解析resource
-            var currentPath = newConfig.resources;
-            for (var i = 0; i < list.length - 1; i++) {
-                var drName = list[i];
-                if (null == currentPath[drName])
-                    currentPath[drName] = {};
-                currentPath = currentPath[drName];
-            }
-            currentPath[lastname] = r.url;
-            if (-1 != r.url.lastIndexOf("UIAtlas")) {
-                if ("json" == extion) {
-                    var newFileName = fileNameNoExt + ".png";
-                    currentPath[newFileName] = directNameNoExt + ".png";
+            let resourceName = _1.ResourceConfig.nameSelector(r.url);
+            let file = _1.ResourceConfig.getFile(resourceName);
+            if (!file) {
+                if (yield fs.existsAsync(path.join(resourceFolder, r.url))) {
+                    _1.ResourceConfig.addFile(r, false);
                 }
+                else {
+                    console.error(`missing file ${r.name} ${r.url}`);
+                }
+                continue;
             }
-            var atlasName = null;
+            if (file.name != r.name) {
+                config.alias[r.name] = file.name;
+            }
             for (var resource_custom_key in r) {
-                if (resource_custom_key == "url" || resource_custom_key == "type" || resource_custom_key == "name") {
-                    if ("name" == resource_custom_key) {
-                        atlasName = resource_custom_key;
-                    }
+                if (resource_custom_key == "url" || resource_custom_key == "name") {
                     continue;
                 }
                 else if (resource_custom_key == "subkeys") {
-                    var subkeysArr = r.subkeys.split(",");
+                    var subkeysArr = r[resource_custom_key].split(",");
                     for (let subkey of subkeysArr) {
-                        newConfig.alias[r.name + "." + subkey] = r.url + "#" + subkey;
+                        config.alias[r.name + "." + subkey] = r.url + "#" + subkey;
+                        file[resource_custom_key] = r[resource_custom_key];
                     }
                 }
                 else {
-                    if (typeof file != "string") {
-                        file[resource_custom_key] = r[resource_custom_key];
-                    }
-                    else {
-                        console.warn(`missing properties ${resource_custom_key} in ${file}`);
-                    }
+                    //包含 type 在内的自定义属性
+                    file[resource_custom_key] = r[resource_custom_key];
                 }
             }
         }
         for (let group of resourceJson.groups) {
-            if (null == newConfig.groups)
-                newConfig.groups = {};
-            var splitArr = group.keys.split(",");
-            var idx = splitArr.lastIndexOf("");
-            if (-1 != idx)
-                splitArr.splice(idx, 1);
-            newConfig.groups[group.name] = splitArr;
+            config.groups[group.name] = group.keys.split(",");
         }
-        _1.ResourceConfig.config = newConfig;
-        return _1.ResourceConfig.config;
     });
 }
 exports.convertResourceJson = convertResourceJson;

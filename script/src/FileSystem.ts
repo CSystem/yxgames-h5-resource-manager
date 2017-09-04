@@ -4,13 +4,13 @@ export interface File {
 
     type: string;
 
-    name?: string;
+    name: string;
 
 }
 
 export interface Dictionary {
 
-    [file: string]: File | Dictionary | string;
+    [file: string]: File | Dictionary
 
 }
 
@@ -24,26 +24,21 @@ var root: Dictionary = {};
 
 export function addFile(r: File) {
 
-    var type = r.type;
-    var filename = r.name;
-    var url = r.url;
+    let { type, name, url} = r;
     if (!type) type = "";
-    filename = normalize(filename);
-    let basefilename = basename(filename);
-    let folder = dirname(filename);
+    name = normalize(name);
+    let basefilename = basename(name);
+    let folder = dirname(name);
     if (!exists(folder)) {
         mkdir(folder);
     }
-    let d = reslove(folder);
-    if (!type) {
-        d[basefilename] = url;
-    }
-    else {
-        d[basefilename] = { url, type };
+    let d = reslove(folder) as (Dictionary | null);
+    if (d) {
+        d[basefilename] = { url, type, name };
     }
 }
 
-export function getFile(filename: string): File {
+export function getFile(filename: string): File | undefined {
     return reslove(filename) as File;
 }
 
@@ -68,6 +63,9 @@ function reslove(dirpath: string) {
     let current: File | Dictionary = root;
     for (let f of list) {
         current = current[f];
+        if (!current) {
+            return null;
+        }
     }
     return current;
 }

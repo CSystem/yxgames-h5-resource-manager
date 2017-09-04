@@ -7,23 +7,18 @@ function init(d) {
 exports.init = init;
 var root = {};
 function addFile(r) {
-    var type = r.type;
-    var filename = r.name;
-    var url = r.url;
+    let { type, name, url } = r;
     if (!type)
         type = "";
-    filename = normalize(filename);
-    let basefilename = basename(filename);
-    let folder = dirname(filename);
+    name = normalize(name);
+    let basefilename = basename(name);
+    let folder = dirname(name);
     if (!exists(folder)) {
         mkdir(folder);
     }
     let d = reslove(folder);
-    if (!type) {
-        d[basefilename] = url;
-    }
-    else {
-        d[basefilename] = { url, type };
+    if (d) {
+        d[basefilename] = { url, type, name };
     }
 }
 exports.addFile = addFile;
@@ -49,6 +44,9 @@ function reslove(dirpath) {
     let current = root;
     for (let f of list) {
         current = current[f];
+        if (!current) {
+            return null;
+        }
     }
     return current;
 }

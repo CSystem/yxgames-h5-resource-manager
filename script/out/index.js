@@ -7,18 +7,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const fs = require("fs-extra-promise");
-const _config = require("./config");
-const _build = require("./build");
-const _upgrade = require("./upgrade");
 const vfs = require("./FileSystem");
-const _rebuild = require("./rebuild");
+const _config = require("./config");
 const _init = require("./init");
 const _mysql = require("./mysql");
 const _json2ts = require("./json2ts");
+const _zip = require("./zipCompress");
+__export(require("./watch"));
+__export(require("./config"));
+__export(require("./upgrade"));
+__export(require("./build"));
+__export(require("./version"));
+__export(require("./html"));
+__export(require("./json2ts"));
+exports.init = _init;
+exports.mysql = _mysql;
+exports.json2ts = _json2ts;
 exports.config = _config;
+exports.zip = _zip;
 var ResourceNodeType;
 (function (ResourceNodeType) {
     ResourceNodeType[ResourceNodeType["FILE"] = 0] = "FILE";
@@ -30,12 +42,99 @@ function print() {
 exports.print = print;
 var ResourceConfig;
 (function (ResourceConfig) {
+    function loop(r, callback) {
+        for (var key in r) {
+            var f = r[key];
+            if (isFile(f)) {
+                callback(f);
+            }
+            else {
+                loop(f, callback);
+            }
+        }
+    }
+    function isFile(r) {
+        return r.url;
+    }
+    function getConfig() {
+        return ResourceConfig.config;
+    }
+    ResourceConfig.getConfig = getConfig;
+    function generateClassicalConfig(filename) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let result = {
+                groups: [],
+                resources: []
+            };
+            let resources = ResourceConfig.config.resources;
+            let alias = {};
+            for (var aliasName in ResourceConfig.config.alias) {
+                alias[ResourceConfig.config.alias[aliasName]] = aliasName;
+            }
+            loop(resources, (f) => {
+                let r = f;
+                if (alias[r.name]) {
+                    r.name = alias[r.name];
+                }
+                result.resources.push(r);
+            });
+            yield fs.writeJSONAsync(filename, result);
+        });
+    }
+    ResourceConfig.generateClassicalConfig = generateClassicalConfig;
+    function generateConfig(debug) {
+        let loop = (r) => {
+            for (var key in r) {
+                var f = r[key];
+                if (isFile(f)) {
+                    if (typeof (f) == "string") {
+                        continue;
+                    }
+                    if (!debug) {
+                        delete f.name;
+                        if (ResourceConfig.typeSelector(f.url) == f.type) {
+                            delete f.type;
+                        }
+                        if (Object.keys(f).length == 1) {
+                            r[key] = f.url;
+                        }
+                    }
+                }
+                else {
+                    loop(f);
+                }
+            }
+        };
+        let isFile = (r) => {
+            if (r['url']) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        };
+        let generatedData = JSON.parse(JSON.stringify(ResourceConfig.config.resources));
+        loop(generatedData);
+        let result = {
+            alias: ResourceConfig.config.alias,
+            groups: ResourceConfig.config.groups,
+            resources: generatedData
+        };
+        return result;
+    }
+    ResourceConfig.generateConfig = generateConfig;
     var resourcePath;
-    function addFile(r) {
-        var f = r.url;
-        var ext = f.substr(f.lastIndexOf(".") + 1);
-        if (r.type == ResourceConfig.typeSelector(r.name)) {
-            r.type = "";
+    function addFile(r, checkDuplicate) {
+        let { url, name } = r;
+        url = url.split("\\").join("/");
+        name = name.split("\\").join("/");
+        r.url = url;
+        r.name = name;
+        if (checkDuplicate) {
+            let a = vfs.getFile(r.name);
+            if (a && a.url != r.url) {
+                console.warn("duplicate: " + r.url + " => " + a.url);
+            }
         }
         vfs.addFile(r);
     }
@@ -48,28 +147,14 @@ var ResourceConfig;
         return __awaiter(this, void 0, void 0, function* () {
             let result = yield _config.getConfigViaDecorator(projectPath);
             ResourceConfig.typeSelector = result.typeSelector;
+            ResourceConfig.mergeSelector = result.mergeSelector;
             resourcePath = path.resolve(projectPath, result.resourceRoot);
             let filename = path.resolve(process.cwd(), projectPath, result.resourceRoot, result.resourceConfigFileName);
-            let data;
-            try {
-                data = yield fs.readJSONAsync(filename);
-            }
-            catch (e) {
-                console.warn(`${filename}解析失败,使用初始值`);
-                data = { alias: {}, groups: {}, resources: {} };
-            }
-            console.log("init data : " + filename);
-            vfs.init(data.resources);
-            ResourceConfig.config = data;
-            ResourceConfig.oldConfig = { groups: [], resources: [] };
+            ;
+            ResourceConfig.config = { alias: {}, groups: {}, resources: {} };
+            vfs.init(ResourceConfig.config.resources);
             return result;
         });
     }
     ResourceConfig.init = init;
 })(ResourceConfig = exports.ResourceConfig || (exports.ResourceConfig = {}));
-exports.build = _build;
-exports.upgrade = _upgrade;
-exports.rebuild = _rebuild;
-exports.init = _init;
-exports.mysql = _mysql;
-exports.json2ts = _json2ts;

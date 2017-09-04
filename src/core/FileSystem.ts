@@ -28,7 +28,12 @@ module RES {
     }
 
     export function getResourceInfo(path: string): File {
-        return FileSystem.getFile(path);
+        let result = FileSystem.getFile(path);
+        if (!result) {
+            path = RES.resourceNameSelector(path);
+            result = FileSystem.getFile(path);
+        }
+        return result;
     }
 
     export namespace FileSystem {
@@ -69,7 +74,7 @@ module RES {
         }
 
         function reslove(dirpath: string) {
-            if (dirpath == ""){
+            if (dirpath == "") {
                 return data;
             }
             dirpath = normalize(dirpath);

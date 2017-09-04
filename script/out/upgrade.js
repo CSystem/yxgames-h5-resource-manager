@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const fs = require("fs-extra-promise");
-function run(projectPath) {
+function upgrade(projectPath) {
     return __awaiter(this, void 0, void 0, function* () {
         function copyLibrary() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -99,4 +99,4 @@ function run(projectPath) {
         yield modifyTypeScriptConfigFile();
     });
 }
-exports.run = run;
+exports.upgrade = upgrade;

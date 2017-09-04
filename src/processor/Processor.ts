@@ -37,6 +37,12 @@ module RES.processor {
         })
     }
 
+    function getURL(resource: ResourceInfo) {
+        let prefix = resource.extra ? "" : resourceRoot;
+        let url = prefix + resource.url;
+        return RES.getRealURL(url);
+    }
+
 
     export function getRelativePath(url: string, file: string): string {
         url = url.split("\\").join("/");
@@ -63,8 +69,7 @@ module RES.processor {
 
         async onLoadStart(host, resource) {
             var loader = new egret.ImageLoader();
-            let prefix = resource.extra ? "" : resourceRoot;
-            loader.load(prefix + resource.url);
+            loader.load(getURL(resource));
             var bitmapData = await promisify(loader, resource);
             // if (!cache[resource.url]){
             //     cache[resource.url] = new egret.Texture();
@@ -96,8 +101,7 @@ module RES.processor {
 
             var request: egret.HttpRequest = new egret.HttpRequest();
             request.responseType = egret.HttpResponseType.ARRAY_BUFFER;
-            let prefix = resource.extra ? "" : resourceRoot;
-            request.open(prefix + resource.url, "get");
+            request.open(getURL(resource), "get");
             request.send();
             let arraybuffer = await promisify(request, resource);
             return arraybuffer;
@@ -116,8 +120,7 @@ module RES.processor {
 
             var request: egret.HttpRequest = new egret.HttpRequest();
             request.responseType = egret.HttpResponseType.TEXT;
-            let prefix = resource.extra ? "" : resourceRoot;
-            request.open(prefix + resource.url, "get");
+            request.open(getURL(resource), "get");
             request.send();
             let text = await promisify(request, resource);
             return text;
@@ -214,7 +217,7 @@ module RES.processor {
                 return data.getTexture(subkey);
             }
             else {
-                console.error("missing resource :" + resource.name);
+                console.error(`missing resource : ${key}#${subkey}`);
                 return null;
             }
         },
@@ -256,17 +259,17 @@ module RES.processor {
                 return url;
             }
 
-
             let data = await host.load(resource, TextProcessor);
             let imageUrl = "";
             let config;
             try {
                 config = JSON.parse(data);
-                imageUrl = getRelativePath(resource.name, config.file);
+                imageUrl = resource.name.replace("fnt", "png");
             }
             catch (e) {
                 config = data;
-                imageUrl = this.getTexturePath(resource.name, data);
+                // imageUrl = getTexturePath(resource.name, data);
+                imageUrl = resource.name.replace("fnt", "png");;
             }
             let r = host.resourceConfig.getResource(imageUrl);
             if (r) {
@@ -293,9 +296,8 @@ module RES.processor {
 
     export var SoundProcessor: Processor = {
         async onLoadStart(host, resource) {
-            let prefix = resource.extra ? "" : resourceRoot;
             var sound: egret.Sound = new egret.Sound();
-            sound.load(prefix + resource.url);
+            sound.load(getURL(resource));
             await promisify(sound, resource);
             return sound;
         },
@@ -318,6 +320,82 @@ module RES.processor {
         },
         onRemoveStart(host, resource) {
             return Promise.resolve();
+        }
+    }
+
+    export const MergeJSONProcessor: Processor = {
+
+        async onLoadStart(host, resource): Promise<any> {
+
+            let data = await host.load(resource, JsonProcessor);
+            for (var key in data) {
+                manager.config.addSubkey(key, resource.name);
+            }
+            return data;
+        },
+
+
+        getData(host, resource, key, subkey) {
+            let data = host.get(resource);
+            if (data) {
+                return data[subkey];
+            }
+            else {
+                console.error("missing resource :" + resource.name);
+                return null;
+            }
+        },
+
+
+        onRemoveStart(host, resource): Promise<any> {
+            return Promise.resolve();
+        }
+    }
+
+
+    export var ResourceConfigProcessor: Processor = {
+
+
+        async onLoadStart(host, resource) {
+            let data = await host.load(resource, JsonProcessor);
+            let resources = data.resources;
+            let loop = (r, prefix, walk: (r: ResourceInfo) => void) => {
+                for (var key in r) {
+                    let p = prefix ? prefix + "/" + key : key;
+                    var f = r[key];
+                    if (isFile(f)) {
+
+                        if (typeof f === 'string') {
+                            f = { url: f, name: p };
+                            r[key] = f;
+                        }
+                        else {
+                            f['name'] = p;
+                        }
+                        walk(f);
+                    }
+                    else {
+                        loop(f, p, walk);
+                    }
+
+                }
+            }
+
+            let isFile = (r) => {
+                return typeof r === "string" || r.url != null;
+            }
+
+            loop(resources, "", value => {
+                if (!value.type) {
+                    value.type = resourceTypeSelector(value.url);
+                }
+            })
+
+            return data;
+        },
+
+        async onRemoveStart() {
+
         }
     }
 
@@ -566,7 +644,9 @@ module RES.processor {
         "commonjs": CommonJSProcessor,
         "sound": SoundProcessor,
         "movieclip": MovieClipProcessor,
-        "pvr": PVRProcessor
+        "pvr": PVRProcessor,
+        "mergeJson": MergeJSONProcessor,
+        "resourceConfig": ResourceConfigProcessor
     }
 }
 

@@ -10,69 +10,68 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const ast = require("egret-typescript-ast");
 const path = require("path");
-const ts = require("typescript");
-const _1 = require("./");
-const fs = require("fs-extra-promise");
+function printConfig(egretRoot) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let data = yield getConfigViaDecorator(egretRoot);
+        let source = getDist();
+        let { resourceRoot, resourceConfigFileName, typeSelector } = data;
+        let typeSelectorBody = typeSelector.toString();
+        let outputData = { resourceRoot, resourceConfigFileName, typeSelectorBody, source };
+        console.log(JSON.stringify(outputData));
+    });
+}
+exports.printConfig = printConfig;
+function getDist() {
+    let folder = path.resolve(__dirname, "../../bin/resourcemanager");
+    let bundleFiles = [
+        "resourcemanager.js"
+    ];
+    let minFiles = [
+        "resourcemanager.min.js"
+    ];
+    let declareFiles = [
+        "resourcemanager.d.ts"
+    ];
+    return {
+        folder, bundleFiles, minFiles, declareFiles
+    };
+}
+exports.getDist = getDist;
 function getConfigViaDecorator(egretRoot) {
     return __awaiter(this, void 0, void 0, function* () {
         let decorators = yield ast.findDecorator(path.join(egretRoot, "src/Main.ts"));
-        decorators = decorators.filter(item => item.name == "RES.mapConfig");
-        if (!decorators || decorators.length == 0 || decorators.length > 1) {
-            throw new Error('missing decorator');
+        function getFunction(name) {
+            let result = decorators.filter(item => item.name == name);
+            if (!result || result.length == 0 || result.length > 1) {
+                return null;
+            }
+            else {
+                let decorator = result[0];
+                return decorator.paramters[0];
+            }
         }
-        let decorator = decorators[0];
+        let mapConfigDecorator = decorators.filter(item => item.name == "RES.mapConfig");
+        if (!mapConfigDecorator || mapConfigDecorator.length == 0 || mapConfigDecorator.length > 1) {
+            throw 'missing decorator';
+        }
+        let decorator = mapConfigDecorator[0];
         let resourceConfigFileName = decorator.paramters[0];
-        let typeSelector = decorator.paramters[2];
+        let mergeSelector = decorator.paramters[3];
         let resourceRoot = "resource/";
         let resConfigFilePath = path.join(resourceRoot, resourceConfigFileName);
-        return { resourceRoot, resourceConfigFileName, typeSelector };
+        let nameSelector = getFunction("RES.mapResourceName");
+        if (!nameSelector) {
+            nameSelector = (p) => p;
+        }
+        let typeSelector = getFunction("RES.mapResourceType");
+        if (!typeSelector) {
+            typeSelector = decorator.paramters[2];
+        }
+        let mergerSelector = getFunction("RES.mapResourceMerger");
+        if (!mergerSelector) {
+            mergerSelector = decorator.paramters[3];
+        }
+        return { resourceRoot, resourceConfigFileName, typeSelector, mergeSelector, nameSelector };
     });
 }
 exports.getConfigViaDecorator = getConfigViaDecorator;
-function publish(filename, matcher, data) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let replacedText = JSON.stringify(data, null, "\t");
-        let config = _1.ResourceConfig.config;
-        let content = yield fs.readFileAsync(filename, "utf-8");
-        let sourceFile = ts.createSourceFile(filename, content, ts.ScriptTarget.ES2015, /*setParentNodes */ true);
-        content = yield delint(sourceFile, matcher, replacedText);
-        return content;
-    });
-}
-exports.publish = publish;
-//分析特定文件中的 exports.resource = {blablabla}，将其中右侧的内容进行替换
-function delint(sourceFile, matcher, replacedText) {
-    let config = _1.ResourceConfig.config;
-    return new Promise((reslove, reject) => {
-        function delintNode(node) {
-            // ExpressionStatement  表达式
-            //    |-- BinaryExpression 二元表达式
-            //      |-- left  左侧
-            //      |-- right  右侧
-            if (node.kind == ts.SyntaxKind.ExpressionStatement) {
-                if (node.expression.kind == ts.SyntaxKind.BinaryExpression) {
-                    let expression = node.expression;
-                    if (expression.left.getText() == matcher) {
-                        let right = expression.right;
-                        let positionStart = right.getStart();
-                        let positionFinish = right.getWidth();
-                        let fullText = sourceFile.getFullText();
-                        fullText = fullText.substr(0, positionStart) + replacedText + fullText.substr(positionStart + positionFinish);
-                        result = fullText;
-                    }
-                }
-            }
-            else {
-                ts.forEachChild(node, delintNode);
-            }
-        }
-        let result = "";
-        let count = setInterval(() => {
-            if (result) {
-                clearInterval(count);
-                reslove(result);
-            }
-        }, 100);
-        delintNode(sourceFile);
-    });
-}

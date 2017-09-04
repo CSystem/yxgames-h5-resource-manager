@@ -21,15 +21,11 @@ await RES.getResAsync("assets/icon.jpg");
 
 * 执行 ```res init ``` 初始化工具集，根目录生成ini文件夹，包含工具配置文件以及readme
 
-* 执行 ```res clean ``` 清理default.res.json 里的非法数据
-
-* 执行 ```res rebuild {.} {dirname} ``` 重建对应目录的资源引用，会覆盖／添加到default.res.json中,例如 ```res rebuild . dragonbones/npc```
+* 执行 ```res watch ``` 监听资源变更，自动更新default.res.json```
 
 * 执行 ```res export ``` 导出数据库配置文件到项目中,具体目录需要在ini.json文件中配置
 
 * 执行 ```res json2ts ``` 将多语言文件导出为ts脚本，对应目录需要在ni.json文件中配置
-
-* 执行 ```res addGroup ``` 将所有文件都生成group
 
 * 执行 ```res upgrade { your-project }``` 将旧版 res 模块升级为新版本，升级过程会完成下述操作
     
@@ -40,3 +36,11 @@ await RES.getResAsync("assets/icon.jpg");
 * 当游戏资源发生变化后，执行```res build { your_project }```，更新资源配置
 
 
+# 使用 ResourceManager 发布资源
+## 执行过程
+
+* 在项目的 ```egretProperties.json``` 中添加```"resources": []```
+* 执行 ``` egret publish --version version1 ``` 完成游戏 js 文件编译加密过程
+* 执行 ``` res publish . bin-release/web/version1 ``` 完成资源发布和 js 文件发布
+* 将游戏资源上传至游戏远程服务器 / CDN 中，不要发布到另一个文件夹，
+* 增加将游戏配置文件打包zip,并添加crc32

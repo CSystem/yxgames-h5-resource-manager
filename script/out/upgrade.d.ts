@@ -1,1 +1,1 @@
-export declare function run(projectPath: any): Promise<void>;
+export declare function upgrade(projectPath: any): Promise<void>;

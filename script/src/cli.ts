@@ -1,53 +1,77 @@
 #!/usr/bin/env node
 
 import * as res from './';
+import * as fs from 'fs-extra-promise';
+import * as path from 'path';
 
 function getProjectPath(p) {
     return p ? p : ".";
 }
 
-var command = process.argv[2];
-switch (command) {
-    case "init":
-        var p = getProjectPath(process.argv[3])
-        res.init.copyIni(p).catch(e => console.log(e))
-        break;
-    case "upgrade":
-        var p = getProjectPath(process.argv[3])
-        res.upgrade.run(p).catch(e => console.log(e))
-        break;
-    case "build":
-        var p = getProjectPath(process.argv[3]);
-        res.build.build(p).catch(e => console.log(e.stack))
-        break;
-    case "clean":
-        var p = getProjectPath(process.argv[3]);
-        res.rebuild.clean(p).catch(e => console.log(e.stack))
-        break;
-    case "rebuild":
-        var p = getProjectPath(process.argv[3]);
-        var d = getProjectPath(process.argv[4]);
-        res.rebuild.rebuild(p, d).catch(e => console.log(e.stack))
-        break;
-    case "export":
-        var p = getProjectPath(process.argv[3]);
-        res.mysql.exportMysql(p).catch(e => console.log(e.stack))
-        break;
-    case "json2ts":
-        var p = getProjectPath(process.argv[3]);
-        res.json2ts.json2ts(p).catch(e => console.log(e.stack))
-        break;
-    case "addGroup":
-        var p = getProjectPath(process.argv[3]);
-        res.rebuild.addDBFiles2Group(p).catch(e => console.log(e.stack))
-        break;
-    default:
-        var p = getProjectPath(command);
-        res.build.build(p).catch(e => console.log(e.stack))
-        break;
+let handleExceiption = (e: string | Error) => {
+    if (typeof e == 'string') {
+        console.log(`错误:${e}`);
+    }
+    else {
+        console.log(`错误:${e.stack}`);
+    }
 }
 
+let getCommand = (command: string) => {
 
+}
 
+const format = process.argv.indexOf("-json") >= 0 ? "json" : "text";
 
+let command = process.argv[2];
+let p = getProjectPath(process.argv[3]);
 
+let promise: Promise<void> | null = null;
+if (command == 'version') {
+    promise = res.version();
+}
+
+if (!promise && p) {
+    switch (command) {
+        case "upgrade":
+            promise = res.upgrade(p);
+            break;
+        case "build":
+            promise = res.build(p, format, undefined, true);
+            break;
+        case "publish":
+            let publishPath = process.argv[4];
+            if (!publishPath) {
+                handleExceiption('请设置发布目录');
+            }
+            promise = res.build(p, format, publishPath);
+            break;
+        case "watch":
+            promise = res.watch(p, format)
+            break;
+        case "config":
+            promise = res.printConfig(p);
+            break;
+        case "json2ts":
+            promise = res.json2ts.json2ts(p);
+            break;
+        case "init":
+            promise = res.init.copyIni(p);
+            break;
+        case "export":
+            promise = res.mysql.exportMysql(p);
+            break;
+        case "compressConfig":
+            promise = res.zip.zipCompress(p);
+            break;
+        default:
+            handleExceiption(`找不到指定的命令{command}`)
+            break;
+    }
+}
+else {
+    handleExceiption(`${path.join(process.cwd(), p)} 不是一个有效的 Egret 项目`)
+}
+if (promise) {
+    promise.catch(handleExceiption);
+}
