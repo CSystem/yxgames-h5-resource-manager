@@ -1,6 +1,6 @@
 {
   "name": "yxgames-h5-resource-manager",
-  "version": "1.1.26",
+  "version": "1.1.27",
   "bin": {
     "res": "script/out/cli.js"
   },
