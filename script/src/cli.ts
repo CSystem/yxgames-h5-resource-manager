@@ -61,8 +61,8 @@ if (!promise && p) {
         case "export":
             promise = res.mysql.exportMysql(p);
             break;
-        case "compressConfig":
-            promise = res.zip.zipCompress(p);
+        case "zipconfig":
+            promise = res.zipconfig(p);
             break;
         default:
             handleExceiption(`找不到指定的命令{command}`)

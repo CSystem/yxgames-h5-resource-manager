@@ -3,6 +3,9 @@ import * as path from 'path';
 import { Data, ResourceConfig } from './';
 import * as fs from 'fs-extra-promise';
 
+export function getResourceRoot(): string {
+    return "resource/";
+}
 
 export async function printConfig(egretRoot) {
     let data = await getConfigViaDecorator(egretRoot);
@@ -49,7 +52,7 @@ export async function getConfigViaDecorator(egretRoot: string) {
     let resourceConfigFileName = decorator.paramters[0];
 
     let mergeSelector = decorator.paramters[3];
-    let resourceRoot = "resource/";
+    let resourceRoot = getResourceRoot();
     let resConfigFilePath = path.join(resourceRoot, resourceConfigFileName);
 
 
@@ -70,12 +73,6 @@ export async function getConfigViaDecorator(egretRoot: string) {
     if (!mergerSelector) {
         mergerSelector = decorator.paramters[3] as MergerSelector;
     }
-
-
     return { resourceRoot, resourceConfigFileName, typeSelector, mergeSelector, nameSelector };
-
-
-
-
 }
 

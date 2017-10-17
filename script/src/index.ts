@@ -17,6 +17,7 @@ export * from './build';
 export * from './version';
 export * from './html';
 export * from './json2ts';
+export * from './tools';
 
 export var init = _init;
 export var mysql = _mysql;

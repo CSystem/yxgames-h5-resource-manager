@@ -114,7 +114,6 @@ export async function build(p: string, format: "json" | "text", publishPath?: st
         let config = ResourceConfig.getConfig();
         await convertResourceJson(projectRoot, config);
         await updateResourceConfigFileContent(outputFile, debug);
-        //await ResourceConfig.generateClassicalConfig(path.join(resourceFolder, "wing.res.json"));
         merger.output();
         if (resourcePath) {
             //修改main.min.js里的config和default版本号
@@ -138,7 +137,6 @@ export async function build(p: string, format: "json" | "text", publishPath?: st
             javascriptContent = javascriptContent.replace("default.thm.json", themeConfigOutputFilePath);
             fs.writeFileSync(javascriptFilePath, javascriptContent, "utf-8");
             //生成cfg的zip包
-
             let cfgstream = vinylfs.src(['./cfg/**'], { cwd: resourceFolder, base: resourceFolder })
             cfgstream = cfgstream.pipe(map(readCfg).on("end", async () => {
                 if (this._configZip) {
