@@ -2,18 +2,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const res = require("./");
+const fs = require("fs-extra-promise");
 const path = require("path");
+const _1 = require("./");
 function getProjectPath(p) {
     return p ? p : ".";
 }
-let handleExceiption = (e) => {
-    if (typeof e == 'string') {
-        console.log(`错误:${e}`);
-    }
-    else {
-        console.log(`错误:${e.stack}`);
-    }
-};
 let getCommand = (command) => {
 };
 const format = process.argv.indexOf("-json") >= 0 ? "json" : "text";
@@ -23,7 +17,7 @@ let promise = null;
 if (command == 'version') {
     promise = res.version();
 }
-if (!promise && p) {
+if (!promise && p && fs.existsSync(path.join(p, "egretProperties.json"))) {
     switch (command) {
         case "upgrade":
             promise = res.upgrade(p);
@@ -34,7 +28,7 @@ if (!promise && p) {
         case "publish":
             let publishPath = process.argv[4];
             if (!publishPath) {
-                handleExceiption('请设置发布目录');
+                _1.handleException('请设置发布目录');
             }
             promise = res.build(p, format, publishPath);
             break;
@@ -53,17 +47,17 @@ if (!promise && p) {
         case "export":
             promise = res.mysql.exportMysql(p);
             break;
-        case "compressConfig":
-            promise = res.zip.zipCompress(p);
+        case "zipconfig":
+            promise = res.zipconfig(p);
             break;
         default:
-            handleExceiption(`找不到指定的命令{command}`);
+            _1.handleException(`找不到指定的命令{command}`);
             break;
     }
 }
 else {
-    handleExceiption(`${path.join(process.cwd(), p)} 不是一个有效的 Egret 项目`);
+    _1.handleException(`${path.join(process.cwd(), p)} 不是一个有效的 Egret 项目`);
 }
 if (promise) {
-    promise.catch(handleExceiption);
+    promise.catch(_1.handleException);
 }

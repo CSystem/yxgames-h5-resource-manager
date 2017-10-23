@@ -26,11 +26,20 @@ __export(require("./build"));
 __export(require("./version"));
 __export(require("./html"));
 __export(require("./json2ts"));
+__export(require("./tools"));
 exports.init = _init;
 exports.mysql = _mysql;
 exports.json2ts = _json2ts;
 exports.config = _config;
 exports.zip = _zip;
+exports.handleException = (e) => {
+    if (typeof e == 'string') {
+        console.log(`错误:${e}`);
+    }
+    else {
+        console.log(`错误:${e.stack}`);
+    }
+};
 var ResourceNodeType;
 (function (ResourceNodeType) {
     ResourceNodeType[ResourceNodeType["FILE"] = 0] = "FILE";

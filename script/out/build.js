@@ -16,7 +16,7 @@ const path = require("path");
 const merger = require("./merger");
 const html = require("./html");
 const config = require("./config");
-const zip = require("jszip");
+const tool = require("./tools");
 var map = require('map-stream');
 var crc32 = require("crc32");
 let projectRoot;
@@ -79,19 +79,6 @@ function build(p, format, publishPath, debug = false) {
         if (resourcePath) {
             stream = stream.pipe(map(convert));
         }
-        let readCfg = (file, cb) => {
-            if (null == this._configZip) {
-                this._configZip = new zip();
-            }
-            file.original_relative = file.relative.split("\\").join("/");
-            let stat = fs.lstatSync(file.path);
-            if (stat.isDirectory()) {
-                cb(null, file);
-                return;
-            }
-            this._configZip.file(file.original_relative, fs.readFileSync(file.path));
-            cb(null, file);
-        };
         //资源发布目录
         let publish_resource_path = publishPath ? path.join(publishPath, "resource_publish") : undefined;
         if (publish_resource_path) {
@@ -103,47 +90,15 @@ function build(p, format, publishPath, debug = false) {
             let config = _1.ResourceConfig.getConfig();
             yield convertResourceJson(projectRoot, config);
             yield updateResourceConfigFileContent(outputFile, debug);
-            //await ResourceConfig.generateClassicalConfig(path.join(resourceFolder, "wing.res.json"));
             merger.output();
-            if (resourcePath) {
-                //修改main.min.js里的config和default版本号
-                //资源发布目录 publish_resource
-                let javascriptFilePath = path.join(publishPath, "main.min.js");
-                let javascriptContent = fs.readFileSync(javascriptFilePath, "utf-8");
-                let configPath = path.join(resourcePath, "config.json");
-                let configContent = fs.readFileSync(configPath, "utf-8");
-                let configCrc32 = crc32(configContent);
-                let configOutputFilePath = rename("config.json", configCrc32);
-                fs.writeFileSync(path.join(publish_resource_path, configOutputFilePath), configContent);
-                let themeConfigPath = path.join(resourcePath, "default.thm.json");
-                let themeConfigContent = fs.readFileSync(themeConfigPath, "utf-8");
-                let themeConfigCrc32 = crc32(themeConfigContent);
-                let themeConfigOutputFilePath = rename("default.thm.json", themeConfigCrc32);
-                fs.writeFileSync(path.join(publish_resource_path, themeConfigOutputFilePath), themeConfigContent);
-                javascriptContent = javascriptContent.replace("config.json", configOutputFilePath);
-                javascriptContent = javascriptContent.replace("default.thm.json", themeConfigOutputFilePath);
-                fs.writeFileSync(javascriptFilePath, javascriptContent, "utf-8");
-                //生成cfg的zip包
-                let cfgstream = vinylfs.src(['./cfg/**'], { cwd: resourceFolder, base: resourceFolder });
-                cfgstream = cfgstream.pipe(map(readCfg).on("end", () => __awaiter(this, void 0, void 0, function* () {
-                    if (this._configZip) {
-                        this._configZip.generateAsync({ type: "uint8array", compression: "DEFLATE", })
-                            .then(function (content) {
-                            let configCrc32 = crc32(content);
-                            let defaultCfgName = "default.cfg.zip";
-                            let outputname = rename(defaultCfgName, configCrc32);
-                            let cfgOutput = path.join(publish_resource_path, outputname);
-                            fs.writeFileSync(cfgOutput, content, "utf-8");
-                            javascriptContent = javascriptContent.replace(defaultCfgName, outputname);
-                            fs.writeFileSync(javascriptFilePath, javascriptContent, "utf-8");
-                        });
-                    }
-                })));
-            }
+            if (resourcePath)
+                tool.zipconfig(p, publishPath);
         })));
         if (resourcePath) {
             stream = stream.pipe(vinylfs.dest(path.join(projectRoot, publish_resource_path)).on("end", () => {
-                html.publish(publishPath);
+                html.publish(publishPath, outputFile).catch(e => _1.handleException(e));
+                fs.removeSync(path.join(publishPath, "resource"));
+                fs.renameSync(path.join(publishPath, "resource_publish"), path.join(publishPath, "resource"));
             }));
         }
     });

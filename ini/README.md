@@ -27,6 +27,8 @@ await RES.getResAsync("assets/icon.jpg");
 
 * 执行 ```res json2ts ``` 将多语言文件导出为ts脚本，对应目录需要在ni.json文件中配置
 
+* 执行 ```res zipconfig { your-project }``` 将resource/cfg目录打包成zip,可以指定目录，只要存在resource/cfg目录即可
+
 * 执行 ```res upgrade { your-project }``` 将旧版 res 模块升级为新版本，升级过程会完成下述操作
     
     * 将 ```egret-resource-manager``` 中包含的新版本资源管理系统的源代码复制到项目文件夹的 libs/modules 目录下

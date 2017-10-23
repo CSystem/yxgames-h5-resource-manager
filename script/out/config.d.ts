@@ -1,3 +1,4 @@
+export declare function getResourceRoot(): string;
 export declare function printConfig(egretRoot: any): Promise<void>;
 export declare function getDist(): {
     folder: string;

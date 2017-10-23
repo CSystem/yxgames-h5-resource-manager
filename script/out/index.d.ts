@@ -12,11 +12,13 @@ export * from './build';
 export * from './version';
 export * from './html';
 export * from './json2ts';
+export * from './tools';
 export declare var init: typeof _init;
 export declare var mysql: typeof _mysql;
 export declare var json2ts: typeof _json2ts;
 export declare var config: typeof _config;
 export declare var zip: typeof _zip;
+export declare let handleException: (e: string | Error) => void;
 export declare namespace iniConfig {
     interface IniConfigData {
         database: DataBaseHost;

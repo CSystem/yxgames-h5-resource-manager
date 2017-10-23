@@ -9,4 +9,6 @@ export async function zipCompress(p: string) {
     let resourceFolder = path.join(projectRoot, result.resourceRoot);
     console.log(resourceFolder);
 
+    
+
 }

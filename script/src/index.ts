@@ -25,6 +25,14 @@ export var json2ts = _json2ts;
 export var config = _config;
 export var zip = _zip;
 
+export let handleException = (e: string | Error) => {
+    if (typeof e == 'string') {
+        console.log(`错误:${e}`);
+    }
+    else {
+        console.log(`错误:${e.stack}`);
+    }
+}
 
 enum ResourceNodeType {
     FILE, DICTIONARY

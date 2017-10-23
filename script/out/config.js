@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const ast = require("egret-typescript-ast");
 const path = require("path");
+function getResourceRoot() {
+    return "resource/";
+}
+exports.getResourceRoot = getResourceRoot;
 function printConfig(egretRoot) {
     return __awaiter(this, void 0, void 0, function* () {
         let data = yield getConfigViaDecorator(egretRoot);
@@ -57,7 +61,7 @@ function getConfigViaDecorator(egretRoot) {
         let decorator = mapConfigDecorator[0];
         let resourceConfigFileName = decorator.paramters[0];
         let mergeSelector = decorator.paramters[3];
-        let resourceRoot = "resource/";
+        let resourceRoot = getResourceRoot();
         let resConfigFilePath = path.join(resourceRoot, resourceConfigFileName);
         let nameSelector = getFunction("RES.mapResourceName");
         if (!nameSelector) {

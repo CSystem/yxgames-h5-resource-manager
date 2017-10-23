@@ -1,1 +1,1 @@
-export declare function publish(publishRoot: string): Promise<void>;
+export declare function publish(publishRoot: string, resourceConfigPath: string): Promise<void>;
